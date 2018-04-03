@@ -73,6 +73,7 @@ Moving your mouse outside of the circle should remove the highlighting.
 var myRectangle;
 
 // Initialize Leaflet Draw
+//task 1: allow to draw retangle on the map, not allow polyline, polygon, circle, or marker
 var drawControl = new L.Control.Draw({
   draw: {
     polyline: false,
@@ -86,8 +87,20 @@ var drawControl = new L.Control.Draw({
 map.addControl(drawControl);
 
 // Event which is run every time Leaflet draw creates a new layer
+//task 2, 3, 4
 map.on('draw:created', function (e) {
     var type = e.layerType; // The type of shape
     var layer = e.layer; // The Leaflet layer for the shape
     var id = L.stamp(layer); // The unique Leaflet ID for the layer
+    if (myRectangle !== undefined){
+      map.removeLayer(myRectangle);// task 3: limit to one retangle, remove previous layer from the map
+      $("#shapes").empty();
+    }
+    myRectangle = layer;
+    myRectangle.addTo(map);//task 2 add retangles to map
+
+    //task 4:Add shape to sidebar
+    $('#shapes').append("<div class='shape' data-leaflet-id=" + myRectangle._leaflet_id + "></div>");
+    $('.shape').append("<h1> Current ID: <span class='current-id'> </h1>");
+    $('.current-id').append("<span style='color:#80B6E5'>" + id + "</span>");
 });

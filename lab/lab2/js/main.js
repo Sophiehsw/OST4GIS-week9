@@ -126,7 +126,7 @@ var state = {
 };
 
 /* We'll use underscore's `once` function to make sure this only happens
- *  one time even if weupdate the position later
+ *  one time even if we update the position later
  */
 var goToOrigin = _.once(function(lat, lng) {
   map.flyTo([lat, lng], 14);
@@ -144,11 +144,18 @@ var updatePosition = function(lat, lng, updated) {
   goToOrigin(lat, lng);
 };
 
+//Set longitude and latitude for the origin
+var origin = {"lat":0, "lng":0};
+
 $(document).ready(function() {
   /* This 'if' check allows us to safely ask for the user's current position */
   if ("geolocation" in navigator) {
     navigator.geolocation.getCurrentPosition(function(position) {
       updatePosition(position.coords.latitude, position.coords.longitude, position.timestamp);
+      //Origin = current location
+      origin.lat = position.coords.latitude;
+      origin.lng = position.coords.longitude;
+      console.log(origin);
     });
   } else {
     alert("Unable to access geolocation API!");
@@ -170,8 +177,35 @@ $(document).ready(function() {
   $("#calculate").click(function(e) {
     var dest = $('#dest').val();
     console.log(dest);
+    //Task 1: geocode destination
+    var myToken = "pk.eyJ1IjoiaHd3NTA4OCIsImEiOiJjamZpdW4wcHAwOWoxMnFwMmtkcW5zYjllIn0._KOIvU63Z4d_RqTm0HLXIA";
+    var url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/' + dest + '.json?access_token=' + myToken;
+    console.log(url);
+    $.getJSON(url).done(function(destination){
+      _.map(destination.features, function(point){
+        //Task 2: generate a route between origin and destination
+        var eachDest = point.geometry.coordinates;
+        //console.log(eachDest);
+        var dest_lng = eachDest[0];
+        var dest_lat = eachDest[1];
+        var destMarker = L.circleMarker([dest_lat,dest_lng],{color:"red"}).addTo(map);
+        //Tast 3: decode the route responses generated
+        var route = "https://api.mapbox.com/directions/v5/mapbox/driving/" + origin.lng + "," + origin.lat + ";" + dest_lng + "," + dest_lat + "?access_token=" + myToken;
+        $.ajax(route).done(function(data){
+          var eachRoute = decode(data.routes[0].geometry);
+          var latlngs = _.map(eachRoute, function(each) {return [each[1]*10, each[0]*10];});
+          console.log(latlngs);
+          //Tast 4: map the route - using turf.js
+          var line = turf.lineString(latlngs);
+          //console.log(line);
+          var myStyle = {
+            "color": "blue",
+            "weight": 2,
+            "opacity": 0.65
+          };
+          L.geoJson(line, {style: myStyle}).addTo(map);
+        });
+      });
+    });
   });
-
 });
-
-
